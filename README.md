@@ -107,10 +107,10 @@ const { embeddings } = await embedMany({
 Any model available on Apertis AI, including:
 
 ### Chat Models
-- `gpt-5.2`, `gpt-5.2-codex`, `gpt-5.1`
-- `claude-opus-4-5-20251101`, `claude-sonnet-4.5`, `claude-haiku-4.5`
-- `gemini-3-pro-preview`, `gemini-3-flash-preview`, `gemini-2.5-flash-preview`
-- And 470+ more models
+- **OpenAI**: `gpt-5.2`, `gpt-5.2-chat`, `gpt-5.2-pro`
+- **Anthropic**: `claude-opus-4-5-20251101`, `claude-opus-4-5-20251101-thinking`, `claude-sonnet-4.5`, `claude-haiku-4.5`
+- **Google**: `gemini-3-pro-preview`, `gemini-3-flash-preview`, `gemini-2.5-pro`
+- **Other**: `glm-4.7`, `minimax-m2.1`, and 470+ more models
 
 ### Embedding Models
 - `text-embedding-3-small`, `text-embedding-3-large`
