@@ -24,13 +24,13 @@ export function createApertis(options: ApertisProviderSettings = {}): ApertisPro
   const baseURL = withoutTrailingSlash(options.baseURL) ?? 'https://api.apertis.ai/v1';
 
   const getHeaders = () => ({
+    ...options.headers,
     Authorization: `Bearer ${loadApiKey({
       apiKey: options.apiKey,
       environmentVariableName: 'APERTIS_API_KEY',
       description: 'Apertis API key',
     })}`,
     'Content-Type': 'application/json',
-    ...options.headers,
   });
 
   const createChatModel = (modelId: ApertisModelId, settings: ApertisChatSettings = {}): LanguageModelV1 =>
