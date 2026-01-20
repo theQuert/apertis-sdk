@@ -1,6 +1,10 @@
-export { createApertis, apertis, type ApertisProvider } from './apertis-provider';
+export {
+  createApertis,
+  apertis,
+  type ApertisProvider,
+} from "./apertis-provider";
 export type {
   ApertisProviderSettings,
   ApertisChatSettings,
   ApertisModelId,
-} from './apertis-chat-settings';
+} from "./apertis-chat-settings";

@@ -1,5 +1,5 @@
-import { createJsonErrorResponseHandler } from '@ai-sdk/provider-utils';
-import { z } from 'zod';
+import { createJsonErrorResponseHandler } from "@ai-sdk/provider-utils";
+import { z } from "zod";
 
 const apertisErrorSchema = z.object({
   error: z.object({

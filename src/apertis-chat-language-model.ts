@@ -5,23 +5,27 @@ import type {
   LanguageModelV1FinishReason,
   LanguageModelV1FunctionTool,
   LanguageModelV1StreamPart,
-} from '@ai-sdk/provider';
+} from "@ai-sdk/provider";
 import {
-  createJsonResponseHandler,
-  createEventSourceResponseHandler,
-  postJsonToApi,
-  generateId,
   type ParseResult,
-} from '@ai-sdk/provider-utils';
-import type { ApertisChatSettings } from './apertis-chat-settings';
-import { apertisFailedResponseHandler } from './apertis-error';
-import { openAIChatResponseSchema, openAIChatChunkSchema, type OpenAIChatChunk } from './schemas/chat-response';
+  createEventSourceResponseHandler,
+  createJsonResponseHandler,
+  generateId,
+  postJsonToApi,
+} from "@ai-sdk/provider-utils";
+import type { ApertisChatSettings } from "./apertis-chat-settings";
+import { apertisFailedResponseHandler } from "./apertis-error";
+import {
+  type OpenAIChatChunk,
+  openAIChatChunkSchema,
+  openAIChatResponseSchema,
+} from "./schemas/chat-response";
 import {
   convertToOpenAIMessages,
-  convertToOpenAITools,
   convertToOpenAIToolChoice,
+  convertToOpenAITools,
   mapApertisFinishReason,
-} from './utils';
+} from "./utils";
 
 export interface ApertisChatConfig {
   provider: string;
@@ -31,14 +35,14 @@ export interface ApertisChatConfig {
 }
 
 export class ApertisChatLanguageModel implements LanguageModelV1 {
-  readonly specificationVersion = 'v1';
-  readonly defaultObjectGenerationMode = 'json';
+  readonly specificationVersion = "v1";
+  readonly defaultObjectGenerationMode = "json";
   readonly supportsImageUrls = true;
 
   constructor(
     readonly modelId: string,
     private readonly settings: ApertisChatSettings,
-    private readonly config: ApertisChatConfig
+    private readonly config: ApertisChatConfig,
   ) {}
 
   get provider(): string {
@@ -49,12 +53,10 @@ export class ApertisChatLanguageModel implements LanguageModelV1 {
     return true;
   }
 
-  async doGenerate(
-    options: LanguageModelV1CallOptions
-  ): Promise<{
+  async doGenerate(options: LanguageModelV1CallOptions): Promise<{
     text?: string;
     toolCalls?: Array<{
-      toolCallType: 'function';
+      toolCallType: "function";
       toolCallId: string;
       toolName: string;
       args: string;
@@ -71,7 +73,9 @@ export class ApertisChatLanguageModel implements LanguageModelV1 {
       headers: this.config.headers(),
       body,
       failedResponseHandler: apertisFailedResponseHandler,
-      successfulResponseHandler: createJsonResponseHandler(openAIChatResponseSchema),
+      successfulResponseHandler: createJsonResponseHandler(
+        openAIChatResponseSchema,
+      ),
       fetch: this.config.fetch,
       abortSignal: options.abortSignal,
     });
@@ -81,7 +85,7 @@ export class ApertisChatLanguageModel implements LanguageModelV1 {
     return {
       text: choice.message.content ?? undefined,
       toolCalls: choice.message.tool_calls?.map((tc) => ({
-        toolCallType: 'function' as const,
+        toolCallType: "function" as const,
         toolCallId: tc.id,
         toolName: tc.function.name,
         args: tc.function.arguments,
@@ -95,9 +99,7 @@ export class ApertisChatLanguageModel implements LanguageModelV1 {
     };
   }
 
-  async doStream(
-    options: LanguageModelV1CallOptions
-  ): Promise<{
+  async doStream(options: LanguageModelV1CallOptions): Promise<{
     stream: ReadableStream<LanguageModelV1StreamPart>;
     rawCall: { rawPrompt: unknown; rawSettings: Record<string, unknown> };
     warnings?: LanguageModelV1CallWarning[];
@@ -109,12 +111,17 @@ export class ApertisChatLanguageModel implements LanguageModelV1 {
       headers: this.config.headers(),
       body,
       failedResponseHandler: apertisFailedResponseHandler,
-      successfulResponseHandler: createEventSourceResponseHandler(openAIChatChunkSchema),
+      successfulResponseHandler: createEventSourceResponseHandler(
+        openAIChatChunkSchema,
+      ),
       fetch: this.config.fetch,
       abortSignal: options.abortSignal,
     });
 
-    const toolCallBuffers: Map<number, { id: string; name: string; arguments: string }> = new Map();
+    const toolCallBuffers: Map<
+      number,
+      { id: string; name: string; arguments: string }
+    > = new Map();
 
     const transformStream = new TransformStream<
       ParseResult<OpenAIChatChunk>,
@@ -133,7 +140,10 @@ export class ApertisChatLanguageModel implements LanguageModelV1 {
 
         // Handle text delta
         if (choice.delta.content) {
-          controller.enqueue({ type: 'text-delta', textDelta: choice.delta.content });
+          controller.enqueue({
+            type: "text-delta",
+            textDelta: choice.delta.content,
+          });
         }
 
         // Handle tool calls
@@ -142,13 +152,14 @@ export class ApertisChatLanguageModel implements LanguageModelV1 {
             let buffer = toolCallBuffers.get(tc.index);
 
             if (!buffer) {
-              buffer = { id: tc.id ?? generateId(), name: '', arguments: '' };
+              buffer = { id: tc.id ?? generateId(), name: "", arguments: "" };
               toolCallBuffers.set(tc.index, buffer);
             }
 
             if (tc.id) buffer.id = tc.id;
             if (tc.function?.name) buffer.name += tc.function.name;
-            if (tc.function?.arguments) buffer.arguments += tc.function.arguments;
+            if (tc.function?.arguments)
+              buffer.arguments += tc.function.arguments;
           }
         }
 
@@ -158,8 +169,8 @@ export class ApertisChatLanguageModel implements LanguageModelV1 {
           for (const [, buffer] of toolCallBuffers) {
             if (buffer.name) {
               controller.enqueue({
-                type: 'tool-call',
-                toolCallType: 'function',
+                type: "tool-call",
+                toolCallType: "function",
                 toolCallId: buffer.id,
                 toolName: buffer.name,
                 args: buffer.arguments,
@@ -170,7 +181,7 @@ export class ApertisChatLanguageModel implements LanguageModelV1 {
           toolCallBuffers.clear();
 
           controller.enqueue({
-            type: 'finish',
+            type: "finish",
             finishReason: mapApertisFinishReason(choice.finish_reason),
             usage: {
               promptTokens: chunk.usage?.prompt_tokens ?? 0,
@@ -184,8 +195,8 @@ export class ApertisChatLanguageModel implements LanguageModelV1 {
         for (const [, buffer] of toolCallBuffers) {
           if (buffer.name) {
             controller.enqueue({
-              type: 'tool-call',
-              toolCallType: 'function',
+              type: "tool-call",
+              toolCallType: "function",
               toolCallId: buffer.id,
               toolName: buffer.name,
               args: buffer.arguments,
@@ -201,19 +212,23 @@ export class ApertisChatLanguageModel implements LanguageModelV1 {
     };
   }
 
-  private buildRequestBody(options: LanguageModelV1CallOptions, stream: boolean) {
+  private buildRequestBody(
+    options: LanguageModelV1CallOptions,
+    stream: boolean,
+  ) {
     // Extract tools and toolChoice from mode if available
-    const tools = options.mode.type === 'regular'
-      ? this.filterFunctionTools(options.mode.tools)
-      : undefined;
-    const toolChoice = options.mode.type === 'regular'
-      ? options.mode.toolChoice
-      : undefined;
+    const tools =
+      options.mode.type === "regular"
+        ? this.filterFunctionTools(options.mode.tools)
+        : undefined;
+    const toolChoice =
+      options.mode.type === "regular" ? options.mode.toolChoice : undefined;
 
     // Determine response format based on mode
-    const responseFormat = options.mode.type === 'object-json'
-      ? { type: 'json_object' as const }
-      : undefined;
+    const responseFormat =
+      options.mode.type === "object-json"
+        ? { type: "json_object" as const }
+        : undefined;
 
     const body: Record<string, unknown> = {
       model: this.modelId,
@@ -223,11 +238,14 @@ export class ApertisChatLanguageModel implements LanguageModelV1 {
 
     // Only add defined optional fields to avoid sending undefined to API
     if (stream) body.stream_options = { include_usage: true };
-    if (options.temperature !== undefined) body.temperature = options.temperature;
+    if (options.temperature !== undefined)
+      body.temperature = options.temperature;
     if (options.maxTokens !== undefined) body.max_tokens = options.maxTokens;
     if (options.topP !== undefined) body.top_p = options.topP;
-    if (options.frequencyPenalty !== undefined) body.frequency_penalty = options.frequencyPenalty;
-    if (options.presencePenalty !== undefined) body.presence_penalty = options.presencePenalty;
+    if (options.frequencyPenalty !== undefined)
+      body.frequency_penalty = options.frequencyPenalty;
+    if (options.presencePenalty !== undefined)
+      body.presence_penalty = options.presencePenalty;
     if (options.stopSequences !== undefined) body.stop = options.stopSequences;
     if (options.seed !== undefined) body.seed = options.seed;
 
@@ -235,22 +253,25 @@ export class ApertisChatLanguageModel implements LanguageModelV1 {
     if (convertedTools !== undefined) body.tools = convertedTools;
 
     const convertedToolChoice = convertToOpenAIToolChoice(toolChoice);
-    if (convertedToolChoice !== undefined) body.tool_choice = convertedToolChoice;
+    if (convertedToolChoice !== undefined)
+      body.tool_choice = convertedToolChoice;
 
     if (responseFormat !== undefined) body.response_format = responseFormat;
     if (this.settings.user !== undefined) body.user = this.settings.user;
-    if (this.settings.logprobs !== undefined) body.logprobs = this.settings.logprobs;
-    if (this.settings.topLogprobs !== undefined) body.top_logprobs = this.settings.topLogprobs;
+    if (this.settings.logprobs !== undefined)
+      body.logprobs = this.settings.logprobs;
+    if (this.settings.topLogprobs !== undefined)
+      body.top_logprobs = this.settings.topLogprobs;
 
     return body;
   }
 
   private filterFunctionTools(
-    tools: Array<LanguageModelV1FunctionTool | { type: string }> | undefined
+    tools: Array<LanguageModelV1FunctionTool | { type: string }> | undefined,
   ): LanguageModelV1FunctionTool[] | undefined {
     if (!tools) return undefined;
     return tools.filter(
-      (tool): tool is LanguageModelV1FunctionTool => tool.type === 'function'
+      (tool): tool is LanguageModelV1FunctionTool => tool.type === "function",
     );
   }
 }

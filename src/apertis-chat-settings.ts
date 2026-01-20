@@ -1,13 +1,13 @@
 export type ApertisModelId =
-  | 'gpt-5.2'
-  | 'gpt-5.2-codex'
-  | 'gpt-5.1'
-  | 'claude-opus-4-5-20251101'
-  | 'claude-sonnet-4.5'
-  | 'claude-haiku-4.5'
-  | 'gemini-3-pro-preview'
-  | 'gemini-3-flash-preview'
-  | 'gemini-2.5-flash-preview'
+  | "gpt-5.2"
+  | "gpt-5.2-codex"
+  | "gpt-5.1"
+  | "claude-opus-4-5-20251101"
+  | "claude-sonnet-4.5"
+  | "claude-haiku-4.5"
+  | "gemini-3-pro-preview"
+  | "gemini-3-flash-preview"
+  | "gemini-2.5-flash-preview"
   // eslint-disable-next-line @typescript-eslint/ban-types
   | (string & {});
 

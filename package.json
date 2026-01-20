@@ -47,5 +47,13 @@
   "peerDependencies": {
     "zod": "^3.0.0"
   },
-  "keywords": ["ai", "apertis", "vercel", "ai-sdk", "llm", "openai", "anthropic"]
+  "keywords": [
+    "ai",
+    "apertis",
+    "vercel",
+    "ai-sdk",
+    "llm",
+    "openai",
+    "anthropic"
+  ]
 }
