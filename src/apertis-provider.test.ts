@@ -12,6 +12,10 @@ describe("createApertis", () => {
     expect(typeof provider).toBe("function");
     expect(typeof provider.chat).toBe("function");
     expect(typeof provider.languageModel).toBe("function");
+    expect(typeof provider.completion).toBe("function");
+    expect(typeof provider.embeddingModel).toBe("function");
+    expect(typeof provider.textEmbeddingModel).toBe("function");
+    expect(typeof provider.imageModel).toBe("function");
   });
 
   it("creates a chat model with correct provider id", () => {
@@ -58,5 +62,49 @@ describe("createApertis", () => {
     const urls = model.supportedUrls as Record<string, RegExp[]>;
     expect(urls["image/*"]).toBeDefined();
     expect(urls["image/*"][0]).toBeInstanceOf(RegExp);
+  });
+
+  it("creates a completion model via completion method", () => {
+    const provider = createApertis({ apiKey: "test-key" });
+    const model = provider.completion("gpt-3.5-turbo-instruct");
+
+    expect(model.provider).toBe("apertis.completion");
+    expect(model.modelId).toBe("gpt-3.5-turbo-instruct");
+    expect(model.specificationVersion).toBe("v3");
+  });
+
+  it("creates an embedding model via embeddingModel method", () => {
+    const provider = createApertis({ apiKey: "test-key" });
+    const model = provider.embeddingModel("text-embedding-3-small");
+
+    expect(model.provider).toBe("apertis.embedding");
+    expect(model.modelId).toBe("text-embedding-3-small");
+    expect(model.specificationVersion).toBe("v3");
+  });
+
+  it("creates an embedding model via textEmbeddingModel method", () => {
+    const provider = createApertis({ apiKey: "test-key" });
+    const model = provider.textEmbeddingModel("text-embedding-3-large", {
+      dimensions: 1024,
+    });
+
+    expect(model.provider).toBe("apertis.embedding");
+    expect(model.modelId).toBe("text-embedding-3-large");
+    expect(model.maxEmbeddingsPerCall).toBe(2048);
+    expect(model.supportsParallelCalls).toBe(true);
+  });
+
+  it("throws error when calling imageModel", () => {
+    const provider = createApertis({ apiKey: "test-key" });
+
+    expect(() => provider.imageModel("dall-e-3")).toThrow(
+      "Image models are not supported by Apertis",
+    );
+  });
+
+  it("implements ProviderV3 interface", () => {
+    const provider = createApertis({ apiKey: "test-key" });
+
+    expect(provider.specificationVersion).toBe("v3");
   });
 });

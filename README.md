@@ -79,14 +79,60 @@ const { text } = await generateText({
 });
 ```
 
+### Text Completions
+
+For models that support the legacy completion API:
+
+```typescript
+import { apertis } from '@apertis/ai-sdk-provider';
+import { generateText } from 'ai';
+
+const { text } = await generateText({
+  model: apertis.completion('gpt-3.5-turbo-instruct'),
+  prompt: 'Complete this: The quick brown fox',
+});
+```
+
+### Embeddings
+
+Generate vector embeddings for semantic search and similarity:
+
+```typescript
+import { apertis } from '@apertis/ai-sdk-provider';
+import { embed, embedMany } from 'ai';
+
+// Single embedding
+const { embedding } = await embed({
+  model: apertis.textEmbeddingModel('text-embedding-3-small'),
+  value: 'Hello world',
+});
+
+// Multiple embeddings
+const { embeddings } = await embedMany({
+  model: apertis.textEmbeddingModel('text-embedding-3-large', {
+    dimensions: 1024, // Optional: reduce dimensions
+  }),
+  values: ['Hello', 'World'],
+});
+```
+
 ## Supported Models
 
 Any model available on Apertis AI, including:
 
+### Chat Models
 - `gpt-5.2`, `gpt-5.2-codex`, `gpt-5.1`
 - `claude-opus-4-5-20251101`, `claude-sonnet-4.5`, `claude-haiku-4.5`
 - `gemini-3-pro-preview`, `gemini-3-flash-preview`, `gemini-2.5-flash-preview`
 - And 470+ more models
+
+### Completion Models
+- `gpt-3.5-turbo-instruct`
+- `davinci-002`, `babbage-002`
+
+### Embedding Models
+- `text-embedding-3-small`, `text-embedding-3-large`
+- `text-embedding-ada-002`
 
 ## Provider Configuration
 
@@ -99,6 +145,12 @@ const apertis = createApertis({
   headers: { 'X-Custom': 'value' },      // Custom headers
 });
 ```
+
+## What's New (v1.1.0)
+
+- **ProviderV3 Interface** - Full implementation of `ProviderV3` specification
+- **Completion Models** - Support for text completion via `apertis.completion()`
+- **Embedding Models** - Support for embeddings via `apertis.textEmbeddingModel()`
 
 ## Breaking Changes (v1.0.0)
 
