@@ -154,16 +154,20 @@ export class ApertisChatLanguageModel implements LanguageModelV1 {
 
         // Handle finish
         if (choice.finish_reason) {
-          // Emit completed tool calls
+          // Emit completed tool calls (only those with valid names)
           for (const [, buffer] of toolCallBuffers) {
-            controller.enqueue({
-              type: 'tool-call',
-              toolCallType: 'function',
-              toolCallId: buffer.id,
-              toolName: buffer.name,
-              args: buffer.arguments,
-            });
+            if (buffer.name) {
+              controller.enqueue({
+                type: 'tool-call',
+                toolCallType: 'function',
+                toolCallId: buffer.id,
+                toolName: buffer.name,
+                args: buffer.arguments,
+              });
+            }
           }
+          // Clear buffers after emitting
+          toolCallBuffers.clear();
 
           controller.enqueue({
             type: 'finish',
@@ -173,6 +177,20 @@ export class ApertisChatLanguageModel implements LanguageModelV1 {
               completionTokens: chunk.usage?.completion_tokens ?? 0,
             },
           });
+        }
+      },
+      flush(controller) {
+        // Emit any remaining buffered tool calls when stream closes early
+        for (const [, buffer] of toolCallBuffers) {
+          if (buffer.name) {
+            controller.enqueue({
+              type: 'tool-call',
+              toolCallType: 'function',
+              toolCallId: buffer.id,
+              toolName: buffer.name,
+              args: buffer.arguments,
+            });
+          }
         }
       },
     });
@@ -197,25 +215,34 @@ export class ApertisChatLanguageModel implements LanguageModelV1 {
       ? { type: 'json_object' as const }
       : undefined;
 
-    return {
+    const body: Record<string, unknown> = {
       model: this.modelId,
       messages: convertToOpenAIMessages(options.prompt),
       stream,
-      stream_options: stream ? { include_usage: true } : undefined,
-      temperature: options.temperature,
-      max_tokens: options.maxTokens,
-      top_p: options.topP,
-      frequency_penalty: options.frequencyPenalty,
-      presence_penalty: options.presencePenalty,
-      stop: options.stopSequences,
-      seed: options.seed,
-      tools: convertToOpenAITools(tools),
-      tool_choice: convertToOpenAIToolChoice(toolChoice),
-      response_format: responseFormat,
-      user: this.settings.user,
-      logprobs: this.settings.logprobs,
-      top_logprobs: this.settings.topLogprobs,
     };
+
+    // Only add defined optional fields to avoid sending undefined to API
+    if (stream) body.stream_options = { include_usage: true };
+    if (options.temperature !== undefined) body.temperature = options.temperature;
+    if (options.maxTokens !== undefined) body.max_tokens = options.maxTokens;
+    if (options.topP !== undefined) body.top_p = options.topP;
+    if (options.frequencyPenalty !== undefined) body.frequency_penalty = options.frequencyPenalty;
+    if (options.presencePenalty !== undefined) body.presence_penalty = options.presencePenalty;
+    if (options.stopSequences !== undefined) body.stop = options.stopSequences;
+    if (options.seed !== undefined) body.seed = options.seed;
+
+    const convertedTools = convertToOpenAITools(tools);
+    if (convertedTools !== undefined) body.tools = convertedTools;
+
+    const convertedToolChoice = convertToOpenAIToolChoice(toolChoice);
+    if (convertedToolChoice !== undefined) body.tool_choice = convertedToolChoice;
+
+    if (responseFormat !== undefined) body.response_format = responseFormat;
+    if (this.settings.user !== undefined) body.user = this.settings.user;
+    if (this.settings.logprobs !== undefined) body.logprobs = this.settings.logprobs;
+    if (this.settings.topLogprobs !== undefined) body.top_logprobs = this.settings.topLogprobs;
+
+    return body;
   }
 
   private filterFunctionTools(
