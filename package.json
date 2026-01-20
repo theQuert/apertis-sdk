@@ -5,9 +5,9 @@
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
-    "url": "https://github.com/apertis/ai-sdk-provider"
+    "url": "https://github.com/theQuert/apertis-sdk"
   },
-  "homepage": "https://github.com/apertis/ai-sdk-provider#readme",
+  "homepage": "https://github.com/theQuert/apertis-sdk#readme",
   "type": "module",
   "engines": {
     "node": ">=18.0.0"
